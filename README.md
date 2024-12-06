@@ -1,34 +1,31 @@
 # FakeYou.NET
-
 [![NuGet](https://img.shields.io/nuget/v/FakeYou.NET.svg)](https://www.nuget.org/packages/FakeYou.NET)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/FakeYou.NET.svg)](https://www.nuget.org/packages/FakeYou.NET)
 [![License](https://img.shields.io/github/license/SpongeEngine/FakeYou.NET)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-6.0%20%7C%207.0%20%7C%208.0%2B-512BD4)](https://dotnet.microsoft.com/download)
 [![Tests](https://github.com/SpongeEngine/FakeYou.NET/actions/workflows/test.yml/badge.svg)](https://github.com/SpongeEngine/FakeYou.NET/actions/workflows/test.yml)
 
-A modern .NET client library for the FakeYou text-to-speech API. This library provides a simple and efficient way to interact with FakeYou's TTS services, including voice model management and audio generation.
+A modern .NET client library for the FakeYou text-to-speech API. This library provides a simple, efficient, and cross-platform way to interact with FakeYou's TTS services.
 
 📦 [View Package on NuGet](https://www.nuget.org/packages/FakeYou.NET)
 
 ## Features
-
 - Easy-to-use API for text-to-speech generation
+- Cross-platform WAV audio processing
+- Built-in format conversion to 16-bit PCM
+- Engine-agnostic design (works with Unity, Godot, and other frameworks)
 - Configurable retry policies for improved reliability
-- Comprehensive audio format handling
 - Full async/await support
+- Comprehensive logging capabilities
 - Strong type safety
-- Extensive logging capabilities
 
 ## Installation
-
 Install FakeYou.NET via NuGet:
-
 ```bash
 dotnet add package FakeYou.NET
 ```
 
 ## Quick Start
-
 ```csharp
 using FakeYou.NET.Client;
 
@@ -53,35 +50,49 @@ foreach (var model in models)
 ```
 
 ## Audio Format
-FakeYou.NET returns WAV audio data exactly as received from the FakeYou API, which is:
+FakeYou.NET automatically handles audio format conversion. The library:
+- Accepts various input formats from FakeYou API
+- Automatically converts to 16-bit PCM WAV
+- Preserves original sample rate (typically 32kHz, 44.1kHz, or 48kHz)
+- Maintains channel configuration (mono/stereo)
 
-- Sample Rate: 44.1 kHz 
-- Channels: 2 (Stereo)
-- Bit Depth: 8-bit PCM
+### Using with Different Frameworks
 
-Many modern applications and platforms expect 16-bit PCM WAV files, so you may need to convert the audio data. Here's an example using NAudio:
-
+#### Unity
 ```csharp
-// Example using NAudio to convert from 8-bit to 16-bit PCM
-using NAudio.Wave;
-
 byte[] audioData = await client.GenerateAudioAsync(modelToken, text);
 
-using var inputStream = new MemoryStream(audioData);
-using var reader = new WaveFileReader(inputStream);
+// Convert to Unity AudioClip
+var audioClip = AudioClip.Create("TTS", /* samples */ ...);
+audioClip.SetData(/* your conversion code */);
+```
 
-// Convert from 8-bit to 16-bit PCM
-var targetFormat = new WaveFormat(44100, 16, 2);
-using var conversionStream = new WaveFormatConversionStream(targetFormat, reader);
-using var outputStream = new MemoryStream();
-WaveFileWriter.WriteWavFileToStream(outputStream, conversionStream);
-audioData = outputStream.ToArray();
+#### Godot
+```csharp
+byte[] audioData = await client.GenerateAudioAsync(modelToken, text);
+
+// Convert to Godot AudioStreamWav
+var stream = new AudioStreamWav();
+stream.Data = audioData;
+stream.Format = AudioStreamWav.FormatEnum.Format16Bits;
+// Set other properties as needed
+```
+
+#### Raw Audio Processing
+```csharp
+byte[] audioData = await client.GenerateAudioAsync(modelToken, text);
+
+// Get format information
+var wavProcessor = new WavProcessor();
+var format = wavProcessor.GetWavFormat(audioData);
+Console.WriteLine($"Sample Rate: {format.SampleRate}Hz");
+Console.WriteLine($"Bits Per Sample: {format.BitsPerSample}");
+Console.WriteLine($"Channels: {format.Channels}");
 ```
 
 ## Advanced Usage
 
 ### Custom Configuration
-
 ```csharp
 var client = new FakeYouClient(options =>
 {
@@ -89,24 +100,53 @@ var client = new FakeYouClient(options =>
     options.MaxRetryAttempts = 3;
     options.RetryDelay = TimeSpan.FromSeconds(2);
     options.Logger = yourLoggerInstance;
+    options.ValidateResponseData = true;
 });
 ```
 
 ### Progress Tracking
-
 ```csharp
 client.OnProgress += (progress) =>
 {
-    Console.WriteLine($"Status: {progress.State} - {progress.Message}");
+    switch (progress.State)
+    {
+        case FakeYouProgressState.Starting:
+            Console.WriteLine("Starting generation...");
+            break;
+        case FakeYouProgressState.Processing:
+            Console.WriteLine($"Processing: {progress.Message}");
+            break;
+        case FakeYouProgressState.Complete:
+            Console.WriteLine("Generation complete!");
+            break;
+    }
 };
 ```
 
-## License
+## Error Handling
+```csharp
+try
+{
+    var audioData = await client.GenerateAudioAsync(modelToken, text);
+}
+catch (FakeYouException ex)
+{
+    Console.WriteLine($"FakeYou API error: {ex.Message}");
+    if (ex.StatusCode.HasValue)
+    {
+        Console.WriteLine($"Status code: {ex.StatusCode}");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"General error: {ex.Message}");
+}
+```
 
+## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Contributing
-
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
@@ -116,8 +156,5 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
 - Testing requirements
 - Pull request process
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
 ## Support
-
-For issues and feature requests, please use the GitHub issues page.
+For issues and feature requests, please use the [GitHub issues page](https://github.com/SpongeEngine/FakeYou.NET/issues).
