@@ -4,6 +4,7 @@
 [![NuGet Downloads](https://img.shields.io/nuget/dt/FakeYou.NET.svg)](https://www.nuget.org/packages/FakeYou.NET)
 [![License](https://img.shields.io/github/license/SpongeEngine/FakeYou.NET)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-6.0%20%7C%207.0%20%7C%208.0%2B-512BD4)](https://dotnet.microsoft.com/download)
+[![Tests](https://github.com/SpongeEngine/FakeYou.NET/actions/workflows/test.yml/badge.svg)](https://github.com/SpongeEngine/FakeYou.NET/actions/workflows/test.yml)
 
 A modern .NET client library for the FakeYou text-to-speech API. This library provides a simple and efficient way to interact with FakeYou's TTS services, including voice model management and audio generation.
 
