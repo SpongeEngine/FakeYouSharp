@@ -12,7 +12,6 @@ A modern .NET client library for the FakeYou text-to-speech API. This library pr
 ## Features
 
 - Easy-to-use API for text-to-speech generation
-- Built-in caching for voice models and categories
 - Configurable retry policies for improved reliability
 - Comprehensive audio format handling
 - Full async/await support
