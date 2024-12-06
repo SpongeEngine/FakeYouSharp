@@ -52,6 +52,32 @@ foreach (var model in models)
 }
 ```
 
+## Audio Format
+FakeYou.NET returns WAV audio data exactly as received from the FakeYou API, which is:
+
+- Sample Rate: 44.1 kHz 
+- Channels: 2 (Stereo)
+- Bit Depth: 8-bit PCM
+
+Many modern applications and platforms expect 16-bit PCM WAV files, so you may need to convert the audio data. Here's an example using NAudio:
+
+```csharp
+// Example using NAudio to convert from 8-bit to 16-bit PCM
+using NAudio.Wave;
+
+byte[] audioData = await client.GenerateAudioAsync(modelToken, text);
+
+using var inputStream = new MemoryStream(audioData);
+using var reader = new WaveFileReader(inputStream);
+
+// Convert from 8-bit to 16-bit PCM
+var targetFormat = new WaveFormat(44100, 16, 2);
+using var conversionStream = new WaveFormatConversionStream(targetFormat, reader);
+using var outputStream = new MemoryStream();
+WaveFileWriter.WriteWavFileToStream(outputStream, conversionStream);
+audioData = outputStream.ToArray();
+```
+
 ## Advanced Usage
 
 ### Custom Configuration
