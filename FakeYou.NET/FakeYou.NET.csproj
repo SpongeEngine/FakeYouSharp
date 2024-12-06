@@ -8,10 +8,10 @@
         <!-- Package Info -->
         <PackageId>FakeYou.NET</PackageId>
         <Title>FakeYou.NET</Title>
-        <Version>2.2.0</Version>
+        <Version>2.2.1</Version>
         <Authors>Dan Clipca</Authors>
         <Company>Sponge Engine</Company>
-        <Description>A modern .NET client library for the FakeYou text-to-speech API</Description>
+        <Description>A modern .NET client library for the FakeYou text-to-speech API.</Description>
 
         <!-- Package Details -->
         <PackageTags>tts;speech;fakeyou;text-to-speech;voice;audio</PackageTags>
