@@ -1,5 +1,5 @@
-using NAudio.Wave;
 using Microsoft.Extensions.Logging;
+using System.Text;
 
 namespace FakeYou.NET.Audio
 {
@@ -14,35 +14,29 @@ namespace FakeYou.NET.Audio
 
         public byte[] ConvertToWav(byte[] audioData, WavFormat format)
         {
-            _logger?.LogDebug("Starting audio conversion to {SampleRate}Hz, {BitsPerSample}-bit, {Channels} channels",
+            _logger?.LogDebug("Processing audio format {SampleRate}Hz, {BitsPerSample}-bit, {Channels} channels",
                 format.SampleRate, format.BitsPerSample, format.Channels);
 
-            using var inputStream = new MemoryStream(audioData);
-            using var reader = new WaveFileReader(inputStream);
+            if (!ValidateWavFormat(audioData))
+            {
+                _logger?.LogDebug("Invalid WAV format, ensuring valid header");
+                return EnsureValidWavHeader(audioData, format);
+            }
 
-            _logger?.LogDebug("Input format: {Format}", reader.WaveFormat);
+            // Read the input format
+            var inputFormat = ReadWavFormat(audioData);
+            _logger?.LogDebug("Input format: {SampleRate}Hz, {BitsPerSample}-bit, {Channels} channels",
+                inputFormat.SampleRate, inputFormat.BitsPerSample, inputFormat.Channels);
 
-            if (!NeedsConversion(reader.WaveFormat, format))
+            if (!NeedsConversion(inputFormat, format))
             {
                 _logger?.LogDebug("Audio format matches target, no conversion needed");
                 return audioData;
             }
 
-            var targetFormat = new WaveFormat(
-                format.SampleRate,
-                format.BitsPerSample,
-                format.Channels);
-
-            _logger?.LogDebug("Converting to format: {Format}", targetFormat);
-
-            using var converter = new WaveFormatConversionStream(targetFormat, reader);
-            using var outputStream = new MemoryStream();
-            WaveFileWriter.WriteWavFileToStream(outputStream, converter);
-
-            var result = outputStream.ToArray();
-            _logger?.LogDebug("Audio conversion complete, output size: {Size} bytes", result.Length);
-
-            return result;
+            // For now, just ensure valid header if formats don't match
+            // In future we could implement actual format conversion if needed
+            return EnsureValidWavHeader(audioData, format);
         }
 
         public bool ValidateWavFormat(byte[] audioData)
@@ -82,12 +76,12 @@ namespace FakeYou.NET.Audio
             var header = new byte[44];
 
             // RIFF header
-            System.Text.Encoding.ASCII.GetBytes("RIFF").CopyTo(header, 0);
+            Encoding.ASCII.GetBytes("RIFF").CopyTo(header, 0);
             BitConverter.GetBytes((uint)(data.Length - 8)).CopyTo(header, 4);
-            System.Text.Encoding.ASCII.GetBytes("WAVE").CopyTo(header, 8);
+            Encoding.ASCII.GetBytes("WAVE").CopyTo(header, 8);
 
             // Format chunk
-            System.Text.Encoding.ASCII.GetBytes("fmt ").CopyTo(header, 12);
+            Encoding.ASCII.GetBytes("fmt ").CopyTo(header, 12);
             BitConverter.GetBytes((uint)16).CopyTo(header, 16);
             BitConverter.GetBytes((ushort)1).CopyTo(header, 20);
             BitConverter.GetBytes((ushort)format.Channels).CopyTo(header, 22);
@@ -99,7 +93,7 @@ namespace FakeYou.NET.Audio
             BitConverter.GetBytes((ushort)format.BitsPerSample).CopyTo(header, 34);
 
             // Data chunk
-            System.Text.Encoding.ASCII.GetBytes("data").CopyTo(header, 36);
+            Encoding.ASCII.GetBytes("data").CopyTo(header, 36);
             BitConverter.GetBytes((uint)(data.Length - 44)).CopyTo(header, 40);
 
             var result = new byte[data.Length];
@@ -108,16 +102,26 @@ namespace FakeYou.NET.Audio
 
             return result;
         }
-        
+
         private bool VerifyBytes(byte[] data, int offset, string expected)
         {
-            var actual = System.Text.Encoding.ASCII.GetString(data, offset, expected.Length);
+            var actual = Encoding.ASCII.GetString(data, offset, expected.Length);
             return actual == expected;
         }
 
-        private bool NeedsConversion(WaveFormat current, WavFormat target) =>
+        private bool NeedsConversion(WavFormat current, WavFormat target) =>
             current.SampleRate != target.SampleRate ||
             current.BitsPerSample != target.BitsPerSample ||
             current.Channels != target.Channels;
+
+        private WavFormat ReadWavFormat(byte[] data)
+        {
+            return new WavFormat
+            {
+                Channels = BitConverter.ToUInt16(data, 22),
+                SampleRate = BitConverter.ToInt32(data, 24),
+                BitsPerSample = BitConverter.ToUInt16(data, 34)
+            };
+        }
     }
 }

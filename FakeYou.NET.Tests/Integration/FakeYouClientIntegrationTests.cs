@@ -2,17 +2,15 @@ using Xunit;
 using FluentAssertions;
 using FakeYou.NET.Client;
 using Microsoft.Extensions.Logging;
-using NAudio.Wave;
-using FakeYou.NET.Tests.Utils;
 using System.Diagnostics;
 using Xunit.Abstractions;
+using FakeYou.NET.Audio;
 
 namespace FakeYou.NET.Tests.Integration
 {
     [Collection("FakeYou Tests")]
     public class FakeYouClientIntegrationTests : IDisposable
     {
-        
         private readonly ILogger<FakeYouClientIntegrationTests> _logger;
         private readonly FakeYouClient _client;
         private readonly CancellationTokenSource _cts;
@@ -73,20 +71,28 @@ namespace FakeYou.NET.Tests.Integration
                 audioData.Should().NotBeNull();
                 audioData.Length.Should().BeGreaterThan(44, "WAV file should be larger than header size");
 
-                using (var stream = new MemoryStream(audioData))
-                using (var reader = new WaveFileReader(stream))
-                {
-                    _logger.LogInformation("Generated audio format:");
-                    _logger.LogInformation($"- Sample Rate: {reader.WaveFormat.SampleRate}");
-                    _logger.LogInformation($"- Channels: {reader.WaveFormat.Channels}");
-                    _logger.LogInformation($"- Bits Per Sample: {reader.WaveFormat.BitsPerSample}");
-                    _logger.LogInformation($"- Audio Length: {reader.Length} bytes");
+                // Read WAV header information
+                var processor = new AudioProcessor(_logger);
+                processor.ValidateWavFormat(audioData).Should().BeTrue("Should be valid WAV format");
 
-                    reader.WaveFormat.Encoding.Should().Be(WaveFormatEncoding.Pcm);
-                    reader.WaveFormat.BitsPerSample.Should().Be(16);
-                    reader.WaveFormat.Channels.Should().BeInRange(1, 2);
-                    reader.WaveFormat.SampleRate.Should().BeOneOf(44100, 48000);
-                }
+                // Get format details directly from the WAV header
+                var sampleRate = BitConverter.ToInt32(audioData, 24);
+                var channels = BitConverter.ToUInt16(audioData, 22);
+                var bitsPerSample = BitConverter.ToUInt16(audioData, 34);
+                var dataSize = BitConverter.ToInt32(audioData, 40);
+
+                _logger.LogInformation("Generated audio format:");
+                _logger.LogInformation($"- Sample Rate: {sampleRate}");
+                _logger.LogInformation($"- Channels: {channels}");
+                _logger.LogInformation($"- Bits Per Sample: {bitsPerSample}");
+                _logger.LogInformation($"- Audio Length: {dataSize} bytes");
+
+                // Verify format
+                var formatCode = BitConverter.ToInt16(audioData, 20);
+                formatCode.Should().Be(1, "Should be PCM format");
+                bitsPerSample.Should().Be(16);
+                channels.Should().BeInRange(1, 2);
+                sampleRate.Should().BeOneOf(44100, 48000);
 
                 var outputPath = Path.Combine(Path.GetTempPath(), "fakeyou_test_output.wav");
                 await File.WriteAllBytesAsync(outputPath, audioData);
