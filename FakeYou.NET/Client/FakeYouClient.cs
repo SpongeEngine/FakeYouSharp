@@ -1,4 +1,3 @@
-using System.Net;
 using System.Net.Http.Headers;
 using FakeYou.NET.Audio;
 using FakeYou.NET.Models.Configuration;
@@ -9,7 +8,6 @@ using FakeYou.NET.Models;
 using FakeYou.NET.Policies;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System.Text;
 
 namespace FakeYou.NET.Client
 {
@@ -19,7 +17,7 @@ namespace FakeYou.NET.Client
         private readonly JsonSerializerSettings _jsonSettings;
         private readonly ILogger? _logger;
         private readonly RetryPolicy _retryPolicy;
-        private readonly AudioProcessor _audioProcessor;
+        private readonly WavProcessor _wavProcessor;
         private readonly FakeYouOptions _options;
         private bool _disposed;
 
@@ -42,7 +40,7 @@ namespace FakeYou.NET.Client
 
             _httpClient = CreateHttpClient();
             _retryPolicy = new RetryPolicy(_options.MaxRetryAttempts, _options.RetryDelay, _logger);
-            _audioProcessor = new AudioProcessor(_logger);
+            _wavProcessor = new WavProcessor();
         }
 
         private HttpClient CreateHttpClient()
@@ -116,7 +114,12 @@ namespace FakeYou.NET.Client
                             var audioData = await DownloadAudioAsync(audioUrl, cancellationToken);
                             
                             ReportProgress(FakeYouProgressState.Converting, "Processing audio format...");
-                            var processedAudio = ProcessAudioData(audioData);
+                            var format = _wavProcessor.GetWavFormat(audioData);
+                            _logger?.LogDebug("Downloaded audio format: {Format}", format);
+                            
+                            var processedAudio = _wavProcessor.ProcessAudio(audioData);
+                            var processedFormat = _wavProcessor.GetWavFormat(processedAudio);
+                            _logger?.LogDebug("Processed audio format: {Format}", processedFormat);
                             
                             ReportProgress(FakeYouProgressState.Complete, "Generation complete");
                             return processedAudio;
@@ -137,76 +140,6 @@ namespace FakeYou.NET.Client
             {
                 ReportProgress(FakeYouProgressState.Failed, $"Generation failed: {ex.Message}");
                 throw;
-            }
-        }
-
-        private async Task<string> GenerateAudioUrlAsync(string modelToken, string text,
-            CancellationToken cancellationToken)
-        {
-            var ttsRequest = new TtsRequest(modelToken, text, Guid.NewGuid().ToString("N"));
-            var ttsResponse = await RequestTtsAsync(ttsRequest, cancellationToken);
-
-            if (!ttsResponse.Success)
-                throw new FakeYouException("Failed to start TTS generation");
-
-            var jobToken = ttsResponse.InferenceJobToken;
-            var startTime = DateTime.UtcNow;
-            var attempt = 0;
-
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                attempt++;
-
-                var jobResponse = await GetTtsJobStatusAsync(jobToken, cancellationToken);
-                if (!jobResponse.Success)
-                    throw new FakeYouException("Failed to get job status");
-
-                var status = jobResponse.State?.Status?.ToLower();
-                var message = jobResponse.State?.StatusDescription ?? status;
-                var elapsed = DateTime.UtcNow - startTime;
-
-                ReportProgress(FakeYouProgressState.Processing,
-                    $"Processing: {message} ({elapsed.TotalSeconds:F1}s)", attempt);
-
-                switch (status)
-                {
-                    case "complete_success" when !string.IsNullOrEmpty(jobResponse.State?.AudioPath):
-                        return $"{CdnUrl}{jobResponse.State.AudioPath}";
-
-                    case "complete_failure" or "dead":
-                        throw new FakeYouException("TTS generation failed: " + message);
-
-                    default:
-                        if (elapsed > _options.TtsTimeout)
-                            throw new TimeoutException($"TTS generation timed out after {elapsed.TotalSeconds:F1}s");
-
-                        _logger?.LogDebug("Job still processing after {Elapsed:F1}s. Status: {Status}",
-                            elapsed.TotalSeconds, message);
-
-                        await Task.Delay(_options.PollingInterval, cancellationToken);
-                        continue;
-                }
-            }
-        }
-
-        private byte[] ProcessAudioData(byte[] audioData)
-        {
-            if (!_audioProcessor.ValidateWavFormat(audioData))
-            {
-                _logger?.LogWarning("Invalid WAV format, attempting to fix header...");
-                audioData = _audioProcessor.EnsureValidWavHeader(audioData, WavFormat.Default);
-            }
-
-            try
-            {
-                var converted = _audioProcessor.ConvertToWav(audioData, WavFormat.Default);
-                return converted;
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Failed to process audio data");
-                throw new FakeYouException("Failed to process audio data: " + ex.Message, ex);
             }
         }
 
@@ -313,7 +246,6 @@ namespace FakeYou.NET.Client
             {
                 _logger?.LogDebug("Fetching available voice models");
 
-                // Use /tts/list endpoint as in the working implementation
                 var request = new HttpRequestMessage(HttpMethod.Get, "/tts/list");
                 var response = await _httpClient.SendAsync(request, cancellationToken);
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -328,7 +260,6 @@ namespace FakeYou.NET.Client
                         content);
                 }
 
-                // Use the same serializer settings as the working implementation
                 var result = JsonConvert.DeserializeObject<VoiceModelResponse>(content, new JsonSerializerSettings 
                 {
                     ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver(),
@@ -345,7 +276,6 @@ namespace FakeYou.NET.Client
                     throw new FakeYouException("Failed to get voice models");
                 }
 
-                // Log the first few models to see what we're getting
                 foreach (var model in result.Models.Take(5))
                 {
                     _logger?.LogDebug("Model: {Title}, Token: {Token}, Type: {Type}", 

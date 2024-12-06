@@ -13,7 +13,11 @@ namespace FakeYou.NET.Tests.Integration
     {
         private readonly ILogger<FakeYouClientIntegrationTests> _logger;
         private readonly FakeYouClient _client;
+        private readonly WavProcessor _wavProcessor;
         private readonly CancellationTokenSource _cts;
+
+        // Common audio sample rates in Hz
+        private readonly int[] ValidSampleRates = { 32000, 44100, 48000 };
 
         public FakeYouClientIntegrationTests(ITestOutputHelper output)
         {
@@ -24,6 +28,7 @@ namespace FakeYou.NET.Tests.Integration
                       
             _logger = loggerFactory.CreateLogger<FakeYouClientIntegrationTests>();
             _cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+            _wavProcessor = new WavProcessor();
         
             _client = new FakeYouClient(options =>
             {
@@ -55,12 +60,12 @@ namespace FakeYou.NET.Tests.Integration
                 var voice = models.FirstOrDefault(m => m.ModelToken == TEST_MODEL_TOKEN) 
                     ?? models.First();
 
-                _logger.LogInformation("Selected voice model: {@Voice}", 
-                    new { voice.ModelToken, voice.Title });
+                _logger.LogInformation("Selected voice model: {Title} ({Token})", 
+                    voice.Title, voice.ModelToken);
 
                 var testText = "This is a test of text to speech.";
                 
-                _logger.LogInformation($"Generating audio with voice token: {voice.ModelToken}");
+                _logger.LogInformation("Generating audio with voice token: {Token}", voice.ModelToken);
                 
                 var audioData = await _client.GenerateAudioAsync(
                     voice.ModelToken, 
@@ -68,40 +73,72 @@ namespace FakeYou.NET.Tests.Integration
                     _cts.Token
                 );
 
+                // Validate audio data
                 audioData.Should().NotBeNull();
                 audioData.Length.Should().BeGreaterThan(44, "WAV file should be larger than header size");
 
-                // Read WAV header information
-                var processor = new AudioProcessor(_logger);
-                processor.ValidateWavFormat(audioData).Should().BeTrue("Should be valid WAV format");
+                // Verify WAV format
+                var format = _wavProcessor.GetWavFormat(audioData);
+                
+                _logger.LogInformation("Generated audio format: {SampleRate}Hz {BitsPerSample}-bit {Channels}ch", 
+                    format.SampleRate,
+                    format.BitsPerSample,
+                    format.Channels);
 
-                // Get format details directly from the WAV header
-                var sampleRate = BitConverter.ToInt32(audioData, 24);
-                var channels = BitConverter.ToUInt16(audioData, 22);
-                var bitsPerSample = BitConverter.ToUInt16(audioData, 34);
-                var dataSize = BitConverter.ToInt32(audioData, 40);
+                // Verify format meets our requirements
+                format.AudioFormat.Should().Be(1, "Should be PCM format");
+                format.BitsPerSample.Should().Be(16, "Should be 16-bit");
+                format.Channels.Should().BeInRange(1, 2, "Should be mono or stereo");
+                format.SampleRate.Should().BeOneOf(ValidSampleRates, "Should be a standard sample rate");
 
-                _logger.LogInformation("Generated audio format:");
-                _logger.LogInformation($"- Sample Rate: {sampleRate}");
-                _logger.LogInformation($"- Channels: {channels}");
-                _logger.LogInformation($"- Bits Per Sample: {bitsPerSample}");
-                _logger.LogInformation($"- Audio Length: {dataSize} bytes");
+                // Save test output if SAVE_TEST_OUTPUT environment variable is set
+                if (Environment.GetEnvironmentVariable("SAVE_TEST_OUTPUT") == "1")
+                {
+                    var outputPath = Path.Combine(Path.GetTempPath(), "fakeyou_test_output.wav");
+                    await File.WriteAllBytesAsync(outputPath, audioData);
+                    _logger.LogInformation("Saved test audio to: {Path}", outputPath);
+                }
 
-                // Verify format
-                var formatCode = BitConverter.ToInt16(audioData, 20);
-                formatCode.Should().Be(1, "Should be PCM format");
-                bitsPerSample.Should().Be(16);
-                channels.Should().BeInRange(1, 2);
-                sampleRate.Should().BeOneOf(44100, 48000);
-
-                var outputPath = Path.Combine(Path.GetTempPath(), "fakeyou_test_output.wav");
-                await File.WriteAllBytesAsync(outputPath, audioData);
-                _logger.LogInformation($"Saved test audio to: {outputPath}");
+                sw.Stop();
+                _logger.LogInformation("Test completed in {ElapsedMs}ms", sw.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Test failed after {sw.ElapsedMilliseconds}ms");
+                _logger.LogError(ex, "Test failed after {ElapsedMs}ms", sw.ElapsedMilliseconds);
                 throw;
+            }
+        }
+
+        [Fact]
+        public async Task GenerateAudioAsync_ProcessesMultipleFormats()
+        {
+            // Get a few different voice models
+            var models = await _client.GetVoiceModelsAsync(_cts.Token);
+            var testModels = models.Take(2).ToList();
+            var testText = "Testing multiple formats.";
+
+            foreach (var model in testModels)
+            {
+                _logger.LogInformation("Testing model: {Title} ({Token})", 
+                    model.Title, model.ModelToken);
+
+                var audioData = await _client.GenerateAudioAsync(
+                    model.ModelToken,
+                    testText,
+                    _cts.Token
+                );
+
+                var format = _wavProcessor.GetWavFormat(audioData);
+                _logger.LogInformation("Audio format: {SampleRate}Hz {BitsPerSample}-bit {Channels}ch", 
+                    format.SampleRate,
+                    format.BitsPerSample,
+                    format.Channels);
+
+                // Verify common requirements across all models
+                format.AudioFormat.Should().Be(1, "All formats should be PCM");
+                format.BitsPerSample.Should().Be(16, "All formats should be 16-bit");
+                format.Channels.Should().BeInRange(1, 2, "Should be mono or stereo");
+                format.SampleRate.Should().BeOneOf(ValidSampleRates, "Should be a standard sample rate");
             }
         }
 
