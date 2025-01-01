@@ -7,10 +7,10 @@
 2. Generate an API key:
    - Go to https://www.nuget.org/account/apikeys
    - Click "Create"
-   - Name: "FakeYouSharp Publishing" (or your preferred name)
+   - Name: "SpongeEngine.FakeYouSharp" (or your preferred name)
    - Expiration: 365 days
    - Select "Push new packages and package versions"
-   - Glob Pattern: "FakeYouSharp*"
+   - Glob Pattern: "SpongeEngine.FakeYouSharp*"
    - Save the generated key securely
 
 ### Publishing Process
@@ -27,7 +27,7 @@
 
 3. Push to NuGet:
    ```bash
-   dotnet nuget push .\FakeYouSharp\bin\Release\FakeYouSharp.1.0.0.nupkg --api-key YOUR_API_KEY --source https://api.nuget.org/v3/index.json
+   dotnet nuget push .\SpongeEngine.FakeYouSharp\bin\Release\SpongeEngine.FakeYouSharp.1.0.0.nupkg --api-key YOUR_API_KEY --source https://api.nuget.org/v3/index.json
    ```
    Replace:
    - `1.0.0` with your new version number
