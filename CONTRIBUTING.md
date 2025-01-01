@@ -27,10 +27,10 @@
 
 3. Push to NuGet:
    ```bash
-   dotnet nuget push .\SpongeEngine.FakeYouSharp\bin\Release\SpongeEngine.FakeYouSharp.1.0.0.nupkg --api-key YOUR_API_KEY --source https://api.nuget.org/v3/index.json
+   dotnet nuget push .\SpongeEngine.FakeYouSharp\bin\Release\SpongeEngine.FakeYouSharp.1.1.1.nupkg --api-key YOUR_API_KEY --source https://api.nuget.org/v3/index.json
    ```
    Replace:
-   - `1.0.0` with your new version number
+   - `1.1.1` with your new version number
    - `YOUR_API_KEY` with your NuGet API key
 
 4. Wait 15-30 minutes for the package to appear on NuGet.org
