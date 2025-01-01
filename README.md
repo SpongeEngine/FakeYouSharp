@@ -1,13 +1,13 @@
 # FakeYouSharp
-[![NuGet](https://img.shields.io/nuget/v/FakeYouSharp.svg)](https://www.nuget.org/packages/FakeYouSharp)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/FakeYouSharp.svg)](https://www.nuget.org/packages/FakeYouSharp)
+[![NuGet](https://img.shields.io/nuget/v/SpongeEngine.FakeYouSharp.svg)](https://www.nuget.org/packages/SpongeEngine.FakeYouSharp)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/SpongeEngine.FakeYouSharp.svg)](https://www.nuget.org/packages/SpongeEngine.FakeYouSharp)
 [![License](https://img.shields.io/github/license/SpongeEngine/FakeYouSharp)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-6.0%20%7C%207.0%20%7C%208.0%2B-512BD4)](https://dotnet.microsoft.com/download)
 [![Tests](https://github.com/SpongeEngine/FakeYouSharp/actions/workflows/test.yml/badge.svg)](https://github.com/SpongeEngine/FakeYouSharp/actions/workflows/test.yml)
 
 C# client for the FakeYou TTS API.
 
-📦 [View Package on NuGet](https://www.nuget.org/packages/FakeYouSharp)
+📦 [View Package on NuGet](https://www.nuget.org/packages/SpongeEngine.FakeYouSharp)
 
 ## Features
 - Easy-to-use API for text-to-speech generation
@@ -22,7 +22,7 @@ C# client for the FakeYou TTS API.
 ## Installation
 Install FakeYouSharp via NuGet:
 ```bash
-dotnet add package FakeYouSharp
+dotnet add package SpongeEngine.FakeYouSharp
 ```
 
 ## Quick Start
