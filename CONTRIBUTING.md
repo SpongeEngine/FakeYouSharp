@@ -1,4 +1,4 @@
-# Contributing to FakeYou.NET
+# Contributing to FakeYouSharp
 
 ## Publishing to NuGet
 
@@ -7,16 +7,16 @@
 2. Generate an API key:
    - Go to https://www.nuget.org/account/apikeys
    - Click "Create"
-   - Name: "FakeYou.NET Publishing" (or your preferred name)
+   - Name: "FakeYouSharp Publishing" (or your preferred name)
    - Expiration: 365 days
    - Select "Push new packages and package versions"
-   - Glob Pattern: "FakeYou.NET*"
+   - Glob Pattern: "FakeYouSharp*"
    - Save the generated key securely
 
 ### Publishing Process
-1. Update version in `FakeYou.NET/FakeYou.NET.csproj`:
+1. Update version in `FakeYouSharp/FakeYouSharp.NET.csproj`:
    ```xml
-   <Version>1.0.0</Version>   <!-- Change this to new version -->
+   <Version>1.1.0</Version>   <!-- Change this to new version -->
    ```
 
 2. Clean and pack:
@@ -27,7 +27,7 @@
 
 3. Push to NuGet:
    ```bash
-   dotnet nuget push .\FakeYou.NET\bin\Release\FakeYou.NET.1.0.0.nupkg --api-key YOUR_API_KEY --source https://api.nuget.org/v3/index.json
+   dotnet nuget push .\FakeYouSharp\bin\Release\FakeYouSharp.1.0.0.nupkg --api-key YOUR_API_KEY --source https://api.nuget.org/v3/index.json
    ```
    Replace:
    - `1.0.0` with your new version number

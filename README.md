@@ -1,13 +1,13 @@
-# FakeYou.NET
-[![NuGet](https://img.shields.io/nuget/v/FakeYou.NET.svg)](https://www.nuget.org/packages/FakeYou.NET)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/FakeYou.NET.svg)](https://www.nuget.org/packages/FakeYou.NET)
-[![License](https://img.shields.io/github/license/SpongeEngine/FakeYou.NET)](LICENSE)
+# FakeYouSharp
+[![NuGet](https://img.shields.io/nuget/v/FakeYouSharp.svg)](https://www.nuget.org/packages/FakeYouSharp)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/FakeYouSharp.svg)](https://www.nuget.org/packages/FakeYouSharp)
+[![License](https://img.shields.io/github/license/SpongeEngine/FakeYouSharp)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-6.0%20%7C%207.0%20%7C%208.0%2B-512BD4)](https://dotnet.microsoft.com/download)
-[![Tests](https://github.com/SpongeEngine/FakeYou.NET/actions/workflows/test.yml/badge.svg)](https://github.com/SpongeEngine/FakeYou.NET/actions/workflows/test.yml)
+[![Tests](https://github.com/SpongeEngine/FakeYouSharp/actions/workflows/test.yml/badge.svg)](https://github.com/SpongeEngine/FakeYouSharp/actions/workflows/test.yml)
 
 A .NET client library for the FakeYou text-to-speech API. This library provides a simple, efficient, and cross-platform way to interact with FakeYou's TTS services.
 
-📦 [View Package on NuGet](https://www.nuget.org/packages/FakeYou.NET)
+📦 [View Package on NuGet](https://www.nuget.org/packages/FakeYouSharp)
 
 ## Features
 - Easy-to-use API for text-to-speech generation
@@ -20,14 +20,14 @@ A .NET client library for the FakeYou text-to-speech API. This library provides 
 - Strong type safety
 
 ## Installation
-Install FakeYou.NET via NuGet:
+Install FakeYouSharp via NuGet:
 ```bash
-dotnet add package FakeYou.NET
+dotnet add package FakeYouSharp
 ```
 
 ## Quick Start
 ```csharp
-using FakeYou.NET.Client;
+using FakeYouSharp.Client;
 
 // Create a client instance
 var client = new FakeYouClient(options =>
@@ -50,7 +50,7 @@ foreach (var model in models)
 ```
 
 ## Audio Format
-FakeYou.NET automatically handles audio format conversion. The library:
+FakeYouSharp automatically handles audio format conversion. The library:
 - Accepts various input formats from FakeYou API
 - Automatically converts to 16-bit PCM WAV
 - Preserves original sample rate (typically 32kHz, 44.1kHz, or 48kHz)
@@ -157,4 +157,4 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
 - Pull request process
 
 ## Support
-For issues and feature requests, please use the [GitHub issues page](https://github.com/SpongeEngine/FakeYou.NET/issues).
+For issues and feature requests, please use the [GitHub issues page](https://github.com/SpongeEngine/FakeYouSharp/issues).
