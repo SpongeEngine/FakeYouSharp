@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
         <Version>1.1.2</Version>
+        <TargetFrameworks>net7.0;net8.0;net6.0</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>
