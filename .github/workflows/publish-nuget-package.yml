@@ -16,9 +16,8 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: |
-          6.0.x
-          7.0.x
           8.0.x
+          9.0.x
 
     - name: Get version from source
       id: get-version
@@ -30,14 +29,11 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
       
-    - name: Build for .NET 6.0
-      run: dotnet build --configuration Release --framework net6.0 --no-restore
-      
-    - name: Build for .NET 7.0
-      run: dotnet build --configuration Release --framework net7.0 --no-restore
-
     - name: Build for .NET 8.0
       run: dotnet build --configuration Release --framework net8.0 --no-restore
+
+    - name: Build for .NET 9.0
+      run: dotnet build --configuration Release --framework net9.0 --no-restore
 
     - name: Pack NuGet Package
       run: dotnet pack --configuration Release --output ./output /p:Version=${{ env.VERSION }}
